@@ -13,6 +13,10 @@ public class Matrix {
         this.cols = cols;
     }
 
+    public Matrix(int[][] values) {
+        this.values = values;
+    }
+
     public Matrix(String fileName) throws FileNotFoundException {
         Scanner sc = new Scanner(new File(fileName));
         rows = sc.nextInt();
@@ -34,7 +38,7 @@ public class Matrix {
         return cols;
     }
 
-    public Matrix naiveMultiply(Matrix other) {
+    public Matrix multiply(Matrix other) {
         Matrix newMatrix = new Matrix(this.rows, other.cols);
         int innerDim = this.cols;
 
