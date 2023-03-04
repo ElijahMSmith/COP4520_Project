@@ -12,8 +12,6 @@ public class Main {
         // System.out.println(newMatrix);
 
         MatrixChain chain = new MatrixChain(new Matrix[] { m1, m2, m3, m4 });
-        chain.getBestMultiplicationOrdering();
-
         System.out.println(chain.multiplyOut());
     }
 }

@@ -3,7 +3,6 @@ import java.util.Arrays;
 public class MatrixChain {
 
     private Matrix[] chain;
-    private int[][] dp;
 
     public MatrixChain(Matrix[] chain) {
         this.chain = chain;
@@ -22,13 +21,14 @@ public class MatrixChain {
      * index in the chain of the left array in the ith multiplication pair to
      * achieve this minimum
      */
-    public int[][] getBestMultiplicationOrdering() {
-        // TODO: Can we make this faster by running in parallel (or by brute forcing in parallel?)
+
+    public int[][] getBestMultiplicationOrdering(int N) {
+        // TODO: Can we make this faster by running in parallel (or by brute forcing in
+        // parallel?)
         if (chain.length <= 1)
             return new int[0][2];
 
-        int[] dims = new int[chain.length + 1];
-        int N = dims.length;
+        int[] dims = new int[N + 1];
 
         dims[0] = chain[0].rows();
         for (int i = 1; i < dims.length; i++)
@@ -38,39 +38,44 @@ public class MatrixChain {
             System.out.print(dims[i] + " ");
         System.out.println();
 
-        int minTotalOperations = getMinimumOperations(dims, N);
-        System.out.println("minTotalOperations: " + minTotalOperations);
-        return new int[0][2]; // TODO: Recover this ordering
+        int[][] s = getMinimumOrdering(dims, N);
+        return s;
     }
 
-    private int getMinimumOperations(int[] dims, int N) {
-        int i = 1, j = N - 1;
-        dp = new int[N][N];
-        for (int x = 0; x < dp.length; x++)
-            Arrays.fill(dp[x], -1);
-        return getMinimumOperations(dims, i, j);
+    // https://home.cse.ust.hk/~dekai/271/notes/L12/L12.pdf
+    private int[][] getMinimumOrdering(int[] dims, int N) {
+        int[][] dp = new int[N + 1][N + 1];
+        int[][] s = new int[N + 1][N + 1];
+        for (int l = 2; l <= N; l++) {
+            for (int i = 1; i <= N - l + 1; i++) {
+                int j = i + l - 1;
+                dp[i][j] = Integer.MAX_VALUE;
+                for (int k = i; k <= j - 1; k++) {
+                    int q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
+                    if (q < dp[i][j]) {
+                        dp[i][j] = q;
+                        s[i][j] = k;
+                    }
+                }
+            }
+        }
+        System.out.printf("getMinimumOrdering found '%d' is the lowest total comps\n", dp[1][N]);
+        return s;
     }
 
-    private int getMinimumOperations(int[] dims, int i, int j) {
-        if (i == j) {
-            return 0;
+    private Matrix multiplyOutSmart(int[][] s, int i, int j) {
+        if (i < j) {
+            Matrix X = multiplyOutSmart(s, i, s[i][j]);
+            Matrix Y = multiplyOutSmart(s, s[i][j] + 1, j);
+            return X.multiply(Y);
         }
+        return chain[i];
+    }
 
-        if (dp[i][j] != -1) {
-            return dp[i][j];
-        }
-
-        dp[i][j] = Integer.MAX_VALUE;
-        for (int k = i; k < j; k++) {
-            dp[i][j] = Math.min(
-                    dp[i][j],
-                    getMinimumOperations(
-                            dims, i, k)
-                            + getMinimumOperations(
-                                    dims, k + 1, j)
-                            + dims[i - 1] * dims[k] * dims[j]);
-        }
-        return dp[i][j];
+    public Matrix multiplyOut() {
+        int N = chain.length;
+        int[][] s = getBestMultiplicationOrdering(N);
+        return multiplyOutSmart(s, 1, N);
     }
 
     /*
@@ -78,7 +83,7 @@ public class MatrixChain {
      * optimal ordering
      * that results in the fewest number of operations.
      */
-    public Matrix multiplyOut() {
+    public Matrix multiplyOutNaive() {
         // TODO: Make parallel and use optimal ordering
         for (int i = 0; i < chain.length - 1; i++)
             chain[i + 1] = chain[i].multiply(chain[i + 1]);
