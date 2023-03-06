@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class MatrixChain {
 
     private Matrix[] chain;
@@ -23,8 +21,7 @@ public class MatrixChain {
      */
 
     public int[][] getBestMultiplicationOrdering(int N) {
-        // TODO: Can we make this faster by running in parallel (or by brute forcing in
-        // parallel?)
+        // TODO: Can we make this faster by running in parallel (or by parallel BF?)
         if (chain.length <= 1)
             return new int[0][2];
 
@@ -64,12 +61,14 @@ public class MatrixChain {
     }
 
     private Matrix multiplyOutSmart(int[][] s, int i, int j) {
+        System.out.printf("s[%d][%d] = %d\n", i, j, s[i][j]);
         if (i < j) {
             Matrix X = multiplyOutSmart(s, i, s[i][j]);
             Matrix Y = multiplyOutSmart(s, s[i][j] + 1, j);
             return X.multiply(Y);
         }
-        return chain[i];
+        // Matrix chain is 0-indexed, where other calcs are not
+        return chain[i - 1];
     }
 
     public Matrix multiplyOut() {
