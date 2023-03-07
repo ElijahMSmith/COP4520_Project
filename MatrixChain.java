@@ -11,6 +11,28 @@ public class MatrixChain {
     }
 
     /*
+     * Ways to introduce concurrency to optimization
+     * 
+     * Option 1: Make DP parallel (Eli currently trying to tackle this)
+     * Have each length of subproblem be a separate thread
+     * Threads can line up in queues and the queue can give them the next largest
+     * When they finish, they return to the queue and spin
+     * Spin can spin perhaps on its own local l variable
+     * When it finishes, set l to -1 then join the queue
+     * When l is finally not -1, go back and calculate matrices
+     * When controller runs out of l to assign, stop each thread (or set some flag
+     * to let them know they should exit)
+     * 
+     * Option 2: Make exponential algorithm parallel
+     * Start X threads and give them some part of the possible divisions at the
+     * highest level (when considering the entire chain)
+     * Let them compute everything required for all their assigned divisions
+     * Compare the minimum between all threads
+     * Have each thread store some rep of everywhere that was divided so that the
+     * matrix ordering can be recovered
+     */
+
+    /*
      * Returns the ordering of matrix multiplications for the entire chain
      * that results in the lowest possible number of operations.
      * 
@@ -20,8 +42,9 @@ public class MatrixChain {
      * achieve this minimum
      */
 
-    public int[][] getBestMultiplicationOrdering(int N) {
-        // TODO: Can we make this faster by running in parallel (or by parallel BF?)
+    private int[][] getBestMultiplicationOrdering() {
+        int N = chain.length;
+
         if (chain.length <= 1)
             return new int[0][2];
 
@@ -43,11 +66,16 @@ public class MatrixChain {
     private int[][] getMinimumOrdering(int[] dims, int N) {
         int[][] dp = new int[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
+        // l is the length of each matrix chain subproblem we tackle this iteration
+        // Start smaller so that when we divide larger chains, answer is already done
         for (int l = 2; l <= N; l++) {
             for (int i = 1; i <= N - l + 1; i++) {
                 int j = i + l - 1;
                 dp[i][j] = Integer.MAX_VALUE;
                 for (int k = i; k <= j - 1; k++) {
+                    // Chain is being considered from indexes i -> j, with k >= i but < j and k
+                    // being the division point
+                    // We take the best way to computer i:k, k+1:j, and the cost of multing together
                     int q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
                     if (q < dp[i][j]) {
                         dp[i][j] = q;
@@ -60,11 +88,14 @@ public class MatrixChain {
         return s;
     }
 
-    private Matrix multiplyOutSmart(int[][] s, int i, int j) {
+    // s[i][j] is the place in subchain i -> j [1, N] to insert a division
+    // Take each smaller chain around the division and repeat
+    // When we get to just a single matrix (i == j) use that (like mergesort)
+    private Matrix multiplyOut(int[][] s, int i, int j) {
         System.out.printf("s[%d][%d] = %d\n", i, j, s[i][j]);
         if (i < j) {
-            Matrix X = multiplyOutSmart(s, i, s[i][j]);
-            Matrix Y = multiplyOutSmart(s, s[i][j] + 1, j);
+            Matrix X = multiplyOut(s, i, s[i][j]);
+            Matrix Y = multiplyOut(s, s[i][j] + 1, j);
             return X.multiply(Y);
         }
         // Matrix chain is 0-indexed, where other calcs are not
@@ -72,9 +103,8 @@ public class MatrixChain {
     }
 
     public Matrix multiplyOut() {
-        int N = chain.length;
-        int[][] s = getBestMultiplicationOrdering(N);
-        return multiplyOutSmart(s, 1, N);
+        int[][] s = getBestMultiplicationOrdering();
+        return multiplyOut(s, 1, chain.length);
     }
 
     /*
