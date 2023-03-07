@@ -1,3 +1,7 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
 public class MatrixChain {
 
     private Matrix[] chain;
@@ -8,6 +12,33 @@ public class MatrixChain {
 
     public MatrixChain(int length) {
         chain = new Matrix[length];
+    }
+
+    public MatrixChain(String fileName) throws FileNotFoundException {
+        Scanner sc = new Scanner(new File(fileName));
+        int inputLen = sc.nextInt();
+        chain = new Matrix[inputLen - 1];
+
+        try {
+            int i = 0;
+            int prev = sc.nextInt();
+            int next;
+            inputLen--;
+
+            while (inputLen > 0) {
+                next = sc.nextInt();
+                chain[i++] = new Matrix(prev, next);
+                prev = next;
+                inputLen--;
+            }
+            sc.close();
+
+            for (int j = 0; j < chain.length; j++)
+                System.out.printf("Matrix %d: %d x %d\n", j, chain[j].rows(), chain[j].cols());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     /*
@@ -63,7 +94,7 @@ public class MatrixChain {
     }
 
     // https://home.cse.ust.hk/~dekai/271/notes/L12/L12.pdf
-    private int[][] getMinimumOrdering(int[] dims, int N) {
+    private int[][] getMinimumOrdering(int[] dims, int N) throws InterruptedException {
         int[][] dp = new int[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
         // l is the length of each matrix chain subproblem we tackle this iteration
