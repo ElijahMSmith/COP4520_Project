@@ -1,18 +1,27 @@
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PrintStream;
+
+import src.MatrixChain;
+import src.ParallelOptimizationChain;
 
 public class Main {
 
     public static void main(String[] args) throws FileNotFoundException {
-        // String inFolder = "test1/";
-        // Matrix m1 = new Matrix("in/" + inFolder + "testMatrix1.txt");
-        // Matrix m2 = new Matrix("in/" + inFolder + "testMatrix2.txt");
-        // Matrix m3 = new Matrix("in/" + inFolder + "testMatrix3.txt");
-        // Matrix m4 = new Matrix("in/" + inFolder + "testMatrix4.txt");
+        int testno = 1;
 
-        // // ((AB)C)D
-        // MatrixChain chain = new MatrixChain(new Matrix[] { m1, m2, m3, m4 });
-        // System.out.println(chain.multiplyOut());
+        try {
+            testno = Integer.parseInt(args[0]);
+        } catch (Exception e) {
+        }
 
-        MatrixChain chain = new MatrixChain("in/temp1.txt");
+        String inFile = "in/test" + testno + ".txt";
+        String outFile = "out/test" + testno + ".txt";
+        MatrixChain chain = new MatrixChain(inFile);
+
+        PrintStream stream = new PrintStream(new File(outFile));
+        System.setOut(stream);
+
+        System.out.println(chain.multiplyOut());
     }
 }
