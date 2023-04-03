@@ -25,14 +25,14 @@ public class ParallelOptimizationChain extends MatrixChain {
 
         private ConcurrentLinkedQueue<Integer> spQueue;
         private int[] dims;
-        private int[][] dp;
+        private long[][] dp;
         private int[][] s;
         private int N;
 
         private static int ID_COUNTER = 0;
         private int ID;
 
-        public OrderingWorker(int[] dims, int[][] dp, int[][] s, ConcurrentLinkedQueue<Integer> spQueue) {
+        public OrderingWorker(int[] dims, long[][] dp, int[][] s, ConcurrentLinkedQueue<Integer> spQueue) {
             N = dp.length - 1;
             this.dims = dims;
             this.dp = dp;
@@ -42,6 +42,10 @@ public class ParallelOptimizationChain extends MatrixChain {
             ID_COUNTER++;
         }
 
+        private boolean willBeFilled(int r, int c) {
+            return !(r == 0 || c == 0 || c <= r);
+        }
+
         @Override
         public void run() {
             while (true) {
@@ -49,10 +53,9 @@ public class ParallelOptimizationChain extends MatrixChain {
                 int l;
                 try {
                     l = spQueue.poll();
-                    System.out.println("Thread " + ID + " got l = " + l);
+                    // System.out.println("Thread " + ID + " grabbed l = " + l);
                 } catch (NullPointerException e) {
                     // If all subproblem lengths have been calculated, stop
-                    System.out.println("Stopping thread " + ID);
                     return;
                 }
 
@@ -63,14 +66,27 @@ public class ParallelOptimizationChain extends MatrixChain {
 
                     // For each possible partition location k
                     for (int k = i; k <= j - 1; k++) {
-                        while (dp[i][k] == EMPTY || dp[k + 1][j] == EMPTY) {
+                        boolean ikWillFill = willBeFilled(i, k);
+                        boolean kjWillFill = willBeFilled(k + 1, j);
+
+                        // Don't wait on slots that will always be zero and aren't important
+                        while (dp[i][k] == EMPTY && ikWillFill) {
+                            // System.out.printf("i = %d, k = %d, dp[i][k] = %d\n", i, k, dp[i][k]);
+
+                        }
+                        while (dp[k + 1][j] == EMPTY && kjWillFill) {
+                            // System.out.printf("k + 1 = %d, j = %d, dp[k+1][j] = %d\n", k + 1, j, dp[k +
+                            // 1][j]);
                         }
 
-                        int q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
+                        long q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
                         if (q < dp[i][j]) {
                             dp[i][j] = q;
                             s[i][j] = k;
                         }
+
+                        if (dp[i][j] == EMPTY)
+                            System.out.println("\t\t -> dp[" + i + "][" + j + "] = " + dp[i][j]);
                     }
                 }
             }
@@ -79,7 +95,7 @@ public class ParallelOptimizationChain extends MatrixChain {
 
     @Override
     protected int[][] getMinimumOrdering(int[] dims, int N) {
-        int[][] dp = new int[N + 1][N + 1];
+        long[][] dp = new long[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
 
         // l is the length of each matrix chain subproblem we tackle this iteration
@@ -98,12 +114,12 @@ public class ParallelOptimizationChain extends MatrixChain {
 
         es.shutdown();
         try {
-            es.awaitTermination(2, TimeUnit.MINUTES);
+            es.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        System.out.printf("getMinimumOrdering found '%d' is the lowest total comps\n", dp[1][N]);
+        System.out.printf("getMinimumOrdering found '%d' is the lowest total operations\n", dp[1][N]);
         return s;
     }
 }

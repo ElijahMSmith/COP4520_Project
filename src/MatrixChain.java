@@ -26,11 +26,11 @@ public class MatrixChain {
             while (i < inputLen) {
                 int r = sc.nextInt();
                 int c = sc.nextInt();
-                int[][] temp = new int[r][c];
+                long[][] temp = new long[r][c];
 
                 for (int rx = 0; rx < r; rx++) {
                     for (int cx = 0; cx < c; cx++) {
-                        temp[rx][cx] = sc.nextInt();
+                        temp[rx][cx] = sc.nextLong();
                     }
                 }
 

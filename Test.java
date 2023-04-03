@@ -1,6 +1,4 @@
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.PrintStream;
 
 import src.MatrixChain;
 import src.ParallelOptimizationChain;

@@ -1,4 +1,5 @@
 package src;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -6,15 +7,15 @@ import java.util.Scanner;
 public class Matrix {
     private int rows;
     private int cols;
-    private int[][] values;
+    private long[][] values;
 
     public Matrix(int rows, int cols) {
-        values = new int[rows][cols];
+        values = new long[rows][cols];
         this.rows = rows;
         this.cols = cols;
     }
 
-    public Matrix(int[][] values) {
+    public Matrix(long[][] values) {
         this.values = values;
         this.rows = values.length;
         if (rows == 0)
@@ -27,11 +28,11 @@ public class Matrix {
         Scanner sc = new Scanner(new File(fileName));
         rows = sc.nextInt();
         cols = sc.nextInt();
-        values = new int[rows][cols];
+        values = new long[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                values[i][j] = sc.nextInt();
+                values[i][j] = sc.nextLong();
             }
         }
         sc.close();
