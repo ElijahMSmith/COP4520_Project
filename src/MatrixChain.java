@@ -1,4 +1,5 @@
 package src;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -112,6 +113,14 @@ public class MatrixChain {
                 }
             }
         }
+
+        for (int i = 0; i <= N; i++) {
+            for (int j = 0; j <= N; j++) {
+                System.out.print(dp[i][j] + " ");
+            }
+            System.out.println();
+        }
+
         System.out.println(dp[1][N]);
         return s;
     }

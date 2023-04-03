@@ -1,4 +1,5 @@
 package src;
+
 import java.io.FileNotFoundException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -28,12 +29,17 @@ public class ParallelOptimizationChain extends MatrixChain {
         private int[][] s;
         private int N;
 
+        private static int ID_COUNTER = 0;
+        private int ID;
+
         public OrderingWorker(int[] dims, int[][] dp, int[][] s, ConcurrentLinkedQueue<Integer> spQueue) {
             N = dp.length - 1;
             this.dims = dims;
             this.dp = dp;
             this.s = s;
             this.spQueue = spQueue;
+            ID = ID_COUNTER;
+            ID_COUNTER++;
         }
 
         @Override
@@ -43,8 +49,10 @@ public class ParallelOptimizationChain extends MatrixChain {
                 int l;
                 try {
                     l = spQueue.poll();
+                    System.out.println("Thread " + ID + " got l = " + l);
                 } catch (NullPointerException e) {
                     // If all subproblem lengths have been calculated, stop
+                    System.out.println("Stopping thread " + ID);
                     return;
                 }
 

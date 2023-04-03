@@ -3,11 +3,11 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
 public class MatrixGenerator {
-    static final int MAX_COLS = 100;
-    static final int MAX_ROWS = 100;
+    static final int MAX_COLS = 20;
+    static final int MAX_ROWS = 20;
     static final int MAX_VALUE = 100;
-    static final int MIN_MATRICES = 2000;
-    static final int MAX_MATRICES = 4000;
+    static final int MIN_MATRICES = 10;
+    static final int MAX_MATRICES = 15;
     static final String outPath = "in/";
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -23,7 +23,7 @@ public class MatrixGenerator {
 
         int lastC = -1;
 
-        int numMatrices = (int) (Math.random() * (MAX_MATRICES) + 1);
+        int numMatrices = (int) (Math.random() * (MAX_MATRICES - MIN_MATRICES + 1)) + MIN_MATRICES;
         System.out.println(numMatrices);
         for (int i = 0; i < numMatrices; i++) {
             int tr = (lastC != -1 ? lastC : (int) (Math.random() * MAX_ROWS + 1));
