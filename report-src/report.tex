@@ -1,6 +1,6 @@
 % !TEX encoding = utf8
 % !TEX program = pdflatex
-\documentclass[conference]{IEEEtran}
+\documentclass[conference,leqno]{IEEEtran}
 \IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
@@ -9,6 +9,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{breqn}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -16,7 +17,7 @@
 \title{Efficient Matrix Multiplication\\
 %{\footnotesize \textsuperscript{*}Note: Sub-titles are not captured in Xplore and
 %should not be used}
-%\thanks{Identify applicable funding agency here. If none, delete this.}
+% \thanks{Identify applicable funding agency here. If none, delete this.}
 }
 
 \author{\IEEEauthorblockN{Karina Narotam}
@@ -53,232 +54,239 @@
 \maketitle
 
 \begin{abstract}
-This document is a model and instructions for \LaTeX.
-This and the IEEEtran.cls file define the components of your paper [title, text, heads, etc.]. *CRITICAL: Do Not Use Symbols, Special Characters, Footnotes, 
-or Math in Paper Title or Abstract.
+The matrix chain multiplication problem is a well-studied optimization problem that finds a solution for the most efficient way to multiply a given set of matrices. Matrix multiplication is associative, so we are free to parenthesize the matrices in the most optimal way possible, which reduces the total number of computations. We investigate the effectiveness of converting existing optimization approaches to parallel implementations that will carry out this task. We also investigate parallel approaches for the actual multiplication of two matrices. We evaluate the parallelization and report any applicable speedup to traditional sequential implementations.
 \end{abstract}
 
-\begin{IEEEkeywords}
-component, formatting, style, styling, insert
-\end{IEEEkeywords}
-
 \section{Introduction}
-This document is a model and instructions for \LaTeX.
-Please observe the conference page limits. 
+Matrix multiplication is a fundamental component of many sciences and technologies today such as engineering, statistics, linear algebra, and many more. In high-pressure or computationally-intense environments, it is critical that long chains of matrices can be computed efficiently using the full capabilities of our constantly-evolving technology. One such evolution that lends itself well to computationally-intensive operations is the growing availability of multi-core processors. In order to speed up the overall process of multiplying out chains of matrices, we can split our computations using parallelization to provide a simple and efficient matrix chain multiplication library.
+The two main problems we seek to optimize are finding the optimal ordering for the matrix multiplication operations and performing large multiplications efficiently. First, to find the optimal ordering of multiplication, we implement a parallel approach to the common $O(n^3)$ dynamic programming approach and evaluate its effectiveness compared to its counterpart. This approach works bottom-up to compute the minimum number of operations for all possible subchains of every length on multiple threads. Second, we utilize the optimal ordering produced by either implementation to perform the full chain computation using Strassen's algorithm, which runs in $O(n^{2.807})$ time. Our findings and comparison to the sequential algorithms are reported.
 
-\section{Ease of Use}
+\section{Background}
+\subsection{Matrix Chain Ordering Problem}
+The well-established matrix chain optimization problem seeks to find the most optimal parenthesization of a chain of matrices such that the total number of operations performed to multiply the chain fully is the minimum of all possible, valid parenthesizations. Certain parenthesizations produce an exponentially higher number of total optimizations than others to multiply out, which can severely hamper the performance of applications that require intense matrix computation. An example of this phenomenon can be seen with the following example.
 
-\subsection{Maintaining the Integrity of the Specifications}
+\textbf{Ex:} If $A$ is a $10\times30$ matrix, $B$ is a $30\times5$ matrix, and $C$ is a $5\times60$ matrix, then the follow equations show the two possible parenthesizations of $ABC$ and the number of operations required to multiply out each:
 
-The IEEEtran class file is used to format your paper and style the text. All margins, 
-column widths, line spaces, and text fonts are prescribed; please do not 
-alter them. You may note peculiarities. For example, the head margin
-measures proportionately more than is customary. This measurement 
-and others are deliberate, using specifications that anticipate your paper 
-as one part of the entire proceedings, and not as an independent document. 
-Please do not revise any of the current designations.
-
-\section{Prepare Your Paper Before Styling}
-Before you begin to format your paper, first write and save the content as a 
-separate text file. Complete all content and organizational editing before 
-formatting. Please note sections \ref{AA}--\ref{SCM} below for more information on 
-proofreading, spelling and grammar.
-
-Keep your text and graphic files separate until after the text has been 
-formatted and styled. Do not number text heads---{\LaTeX} will do that 
-for you.
-
-\subsection{Abbreviations and Acronyms}\label{AA}
-Define abbreviations and acronyms the first time they are used in the text, 
-even after they have been defined in the abstract. Abbreviations such as 
-IEEE, SI, MKS, CGS, ac, dc, and rms do not have to be defined. Do not use 
-abbreviations in the title or heads unless they are unavoidable.
-
-\subsection{Units}
-\begin{itemize}
-\item Use either SI (MKS) or CGS as primary units. (SI units are encouraged.) English units may be used as secondary units (in parentheses). An exception would be the use of English units as identifiers in trade, such as ``3.5-inch disk drive''.
-\item Avoid combining SI and CGS units, such as current in amperes and magnetic field in oersteds. This often leads to confusion because equations do not balance dimensionally. If you must use mixed units, clearly state the units for each quantity that you use in an equation.
-\item Do not mix complete spellings and abbreviations of units: ``Wb/m\textsuperscript{2}'' or ``webers per square meter'', not ``webers/m\textsuperscript{2}''. Spell out units when they appear in text: ``. . . a few henries'', not ``. . . a few H''.
-\item Use a zero before decimal points: ``0.25'', not ``.25''. Use ``cm\textsuperscript{3}'', not ``cc''.)
-\end{itemize}
-
-\subsection{Equations}
-Number equations consecutively. To make your 
-equations more compact, you may use the solidus (~/~), the exp function, or 
-appropriate exponents. Italicize Roman symbols for quantities and variables, 
-but not Greek symbols. Use a long dash rather than a hyphen for a minus 
-sign. Punctuate equations with commas or periods when they are part of a 
-sentence, as in:
 \begin{equation}
-a+b=\gamma\label{eq}
+(AB)C: (10\times30\times5) + (10\times5\times60) = 4500
 \end{equation}
+\begin{equation}
+A(BC): (30\times5\times60) + (10\times30\times60) = 27000
+\end{equation}
+\vspace{.1cm}
 
-Be sure that the 
-symbols in your equation have been defined before or immediately following 
-the equation. Use ``\eqref{eq}'', not ``Eq.~\eqref{eq}'' or ``equation \eqref{eq}'', except at 
-the beginning of a sentence: ``Equation \eqref{eq} is . . .''
+In this example, choosing the second, inefficient parenthesization leads to a $500\%$ increase in the number of operations performed, which may be unacceptable in high-performance programs or those that require many chain multiplications.
 
-\subsection{\LaTeX-Specific Advice}
+The naive or brute force algorithm for finding the most optimal parenthesization is to try all and return the best one. This is a slow process since if there are $n$ matrices, there are $n-1$ places the chain of matrices can be parenthesized. A split after the $kth$ item creates two subchains which can further be parenthesized. This is related to Catalan numbers, which also describe the number of different binary trees on $n$ nodes. It is a fast growing, exponential algorithm that is not feasible for any programming applications with $n$ as an arbitrary value.
 
-Please use ``soft'' (e.g., \verb|\eqref{Eq}|) cross references instead
-of ``hard'' references (e.g., \verb|(1)|). That will make it possible
-to combine sections, add equations, or change the order of figures or
-citations without having to go through the file line by line.
+This problem has a well-known dynamic programming (DP) solution that can determine the number of operations required for the most optimal parenthesization in $O(n^3)$ time, where $n$ is the number of matrices in the full chain. We are able to store the resultant number of operations required for every possible subchain to prevent redundant calculations and achieve a polynomial-time solution.
 
-Please don't use the \verb|{eqnarray}| equation environment. Use
-\verb|{align}| or \verb|{IEEEeqnarray}| instead. The \verb|{eqnarray}|
-environment leaves unsightly spaces around relation symbols.
+\subsection{Previous Work on Ordering Problem}
+Our project proposes enhancements to both the brute-force and DP solutions to this problem by distributing computation between multiple threads. While the $O(n^3)$ algorithm is often reasonable for standard applications or for when the matrices in the chain are few but very large in individual dimensions, we aim to create two possible implementations of parallelization in this process for comparison on very long chains.
+Several non-parallel approaches have been designed to solve the matrix chain ordering problem with a run-time less than $O(n^3)$ at the cost of higher complexity. One such algorithm published by T. C. Hu and M.T. Shing that runs in $O(n*log(n))$ time reduces this problem into the problem of triangulation of a regular polygon\cite{b1}. A simplified version of this algorithm published by Xiaodong Wang, Daxin Zhu, and Jun Tian uses $O(n*log(m))$ time, where $n$ is still the number of matrices in the chain and $m$ is the number of local minimums in the sequence of dimensions for each matrix in the chain\cite{b2}. Finally, an approximation algorithm independently created by both Francis Chin\cite{b3} as well as Hu and Shen\cite{b4} can produce a parenthesization at most $15.47\%$ worse than the optimal choice in $O(n)$ time. Each of these algorithms improve on the DP solution to this problem, but are high-enough complexity to provide a great challenge in finding efficient additions for parallelization. Our solutions aim to replace speedups produced by these efficient algorithms with speedups produced by parallelization.
 
-Please note that the \verb|{subequations}| environment in {\LaTeX}
-will increment the main equation counter even when there are no
-equation numbers displayed. If you forget that, you might write an
-article in which the equation numbers skip from (17) to (20), causing
-the copy editors to wonder if you've discovered a new method of
-counting.
+\section{Methodologies}
+\subsection{Chain Multiplication DP Optimization}
+Our proposed implementation for a concurrent DP algorithm splits the computation for total required operations for each possible subchain length among multiple threads.
 
-{\BibTeX} does not work by magic. It doesn't get the bibliographic
-data from thin air but from .bib files. If you use {\BibTeX} to produce a
-bibliography you must send the .bib files. 
+Let $l$ be the length of a given matrix chain, meaning the number of matrices in the chain. For any given chain of length $l$, this chain can be divided at any point between two matrices into subchains of length $l_0$ and $l_1$, where $1 \leq l_0, l_1 < n$, that can be themselves multiplied out separately. As a result, the DP solution to this problem requires the minimum number of operations to multiply that subchain be computed sequentially for increasing values of $l$. In an $l = 1$ chain, we consider this to be a $0$-cost operation since the matrix does not multiply against itself. We initialize all spaces in our DP 2-D array to be $0$ initially, so we can ignore the $l = 1$ case and start immediately with $l = 2$.
 
-{\LaTeX} can't read your mind. If you assign the same label to a
-subsubsection and a table, you might find that Table I has been cross
-referenced as Table IV-B3. 
+In our implementation, a fixed number of threads will be generated at the start to assist with filling up the storage array. Each thread will spin until it is able to receive the next largest unprocessed value of $l$ from a queue. The queue will contain values $[2, n]$ at the start of the algorithm and will distribute the next lowest value from the front of the queue to each thread that finishes working on a previous value.
 
-{\LaTeX} does not have precognitive abilities. If you put a
-\verb|\label| command before the command that updates the counter it's
-supposed to be using, the label will pick up the last counter to be
-cross referenced instead. In particular, a \verb|\label| command
-should not go before the caption of a figure or a table.
+Each thread will compute all minimums for each possible subchain of the length given to it from the queue. This will require retrieving the minimum from subchains of smaller lengths that must already be completed. If a thread currently working on the smaller subchain has not yet computed this result for the exact required subchain, the thread waiting will spin until this value has been calculated. Threads will stop when the queue is empty and the entire computation has been completed.
 
-Do not use \verb|\nonumber| inside the \verb|{array}| environment. It
-will not stop equation numbers inside \verb|{array}| (there won't be
-any anyway) and it might stop a wanted equation number in the
-surrounding equation.
+We will experiment with the number of threads sharing the computation at once as well as the length of the matrix chain and the size of the inner dimensions of matrices in the chain to identify whether parallelization is helpful or detrimental in a significant number of cases.
 
-\subsection{Some Common Mistakes}\label{SCM}
-\begin{itemize}
-\item The word ``data'' is plural, not singular.
-\item The subscript for the permeability of vacuum $\mu_{0}$, and other common scientific constants, is zero with subscript formatting, not a lowercase letter ``o''.
-\item In American English, commas, semicolons, periods, question and exclamation marks are located within quotation marks only when a complete thought or name is cited, such as a title or full quotation. When quotation marks are used, instead of a bold or italic typeface, to highlight a word or phrase, punctuation should appear outside of the quotation marks. A parenthetical phrase or statement at the end of a sentence is punctuated outside of the closing parenthesis (like this). (A parenthetical sentence is punctuated within the parentheses.)
-\item A graph within a graph is an ``inset'', not an ``insert''. The word alternatively is preferred to the word ``alternately'' (unless you really mean something that alternates).
-\item Do not use the word ``essentially'' to mean ``approximately'' or ``effectively''.
-\item In your paper title, if the words ``that uses'' can accurately replace the word ``using'', capitalize the ``u''; if not, keep using lower-cased.
-\item Be aware of the different meanings of the homophones ``affect'' and ``effect'', ``complement'' and ``compliment'', ``discreet'' and ``discrete'', ``principal'' and ``principle''.
-\item Do not confuse ``imply'' and ``infer''.
-\item The prefix ``non'' is not a word; it should be joined to the word it modifies, usually without a hyphen.
-\item There is no period after the ``et'' in the Latin abbreviation ``et al.''.
-\item The abbreviation ``i.e.'' means ``that is'', and the abbreviation ``e.g.'' means ``for example''.
-\end{itemize}
-An excellent style manual for science writers is \cite{b7}.
+\subsection{Chain Computation}
+When multiplying a chain of matrices together, we first considered splitting up the work of multiplying each pair of matrices across different threads. However, this would not be ideal for our implementation of matrix chain multiplication. Explained more in-depth above, before multiplying a chain of matrices, we are computing the most efficient parenthesization of a matrix chain to reduce total computation. This ordering of multiplying a chain of matrices can exponentially reduce total computation. However, if we were to concurrently multiply separate pairs of matrices in the chain, we would be unable to always follow the efficient parenthesization of matrices that would be computed prior. This is due to the fact that the most efficient parenthesization of a matrix chain will often require that a matrix must wait on an intermediate matrix to be multiplied to. For example, if $A(B(CD)$ was the most efficient parenthesization of four matrices, then we can clearly not multiply two pairs of matrices at the same time since $B$ must wait on $CD$ to finish and $A$ must wait on $B(CD)$ to finish. Since it is in our best interest to follow this efficient ordering of multiplying matrices, we focused on how we can speed up the multiplication of two matrices with parallelization instead of splitting up the chain of matrix multiplication concurrently.
 
-\subsection{Authors and Affiliations}
-\textbf{The class file is designed for, but not limited to, six authors.} A 
-minimum of one author is required for all conference articles. Author names 
-should be listed starting from left to right and then moving down to the 
-next line. This is the author sequence that will be used in future citations 
-and by indexing services. Names should not be listed in columns nor group by 
-affiliation. Please keep your affiliations as succinct as possible (for 
-example, do not differentiate among departments of the same organization).
+After deciding the ordering of the matrices to be multiplied, the next step was deciding the best method to concurrently multiply matrices together and how to efficiently do so. When discussing matrix multiplication there were two main methodologies to consider: a naive approach and Strassen’s algorithm. Given any two matrices $A$ and $B$, the naive approach of matrix multiplication is multiplying row $A_i$ by column $B_j$ to create the $(i, j)^{th}$ position of Matrix $C$. This approach takes $O(n^3)$ time. Strassen’s algorithm creates submatrices from the matrices $A$ and $B$ in order to create Matrix $C$. This approach uses recursion and uses less multiplication than the naive approach. As a result, the algorithm performs in roughly $O(n^2.807)$ time. While Strassen’s algorithm is faster overall, its speed decreases for very small matrices or very large matrices. Furthermore, the algorithm’s recursive nature makes parallelizing the algorithm nearly impossible. Thus, the team decided to stick with the naive approach for solving matrix multiplication.
 
-\subsection{Identify the Headings}
-Headings, or heads, are organizational devices that guide the reader through 
-your paper. There are two types: component heads and text heads.
+The next step was deciding how to parallelize the naive approach for a chain of matrices that need to be multiplied.
 
-Component heads identify the different components of your paper and are not 
-topically subordinate to each other. Examples include Acknowledgments and 
-References and, for these, the correct style to use is ``Heading 5''. Use 
-``figure caption'' for your Figure captions, and ``table head'' for your 
-table title. Run-in heads, such as ``Abstract'', will require you to apply a 
-style (in this case, italic) in addition to the style provided by the drop 
-down menu to differentiate the head from the text.
+One approach was to first create the intermediary matrix that would hold the results of Matrix $A$ and Matrix $B$. In this approach, one thread is created and assigned to every column of matrix B. Each thread would multiply the first row of $A$ with their respective column of $B$. After each thread multiplies its column by the first row, the first row of the intermediary matrix $C$ will have been created. The threads can then move on and begin multiplying their column by the second row of $A$ (if it exists). Meanwhile, we can begin multiplying matrix $C$ by the next matrix to be multiplied, matrix $D$. This is due to the fact that we need only one row to begin multiplication for the next set of matrices. We follow the same process as the beginning of creating a matrix to hold the results of $C$ and $D$. Again, we create as many threads as there are columns in D. Each thread would multiply the first row of $C$ with their respective column of $D$. After each thread multiplies its column by the first row, the first row of the next intermediary matrix $E$ will have been created. By then, matrices $A$ and $B$ would have created the next row of $C$ and so the threads can begin multiplying their threads by the second row of $C$ (if it exists). Meanwhile $E$ can be multiplied by the next matrix and so on until the last matrices are multiplied together. This approach creates matrices as soon as it is possible to begin multiplying even one row by the next matrix’s columns. This approaches issue is starvation. Threads might be available to do work on the next set of matrices. However, if the next row has not been created, then they simply will be waiting. While multiplication and addition should occur in constant time, there is a chance that some calculation will be performed more quickly for one value than another. Thus, again more waiting. Ultimately, while this approach is viable, the next approach seemed the better option.
 
-Text heads organize the topics on a relational, hierarchical basis. For 
-example, the paper title is the primary text head because all subsequent 
-material relates and elaborates on this one topic. If there are two or more 
-sub-topics, the next level head (uppercase Roman numerals) should be used 
-and, conversely, if there are not at least two sub-topics, then no subheads 
-should be introduced.
+After considering that the first approach we had for matrix multiplication would not be nearly as efficient as we had previously thought, we decided to further explore the second idea we had for naive matrix multiplication. Instead of assigning one thread to do the computation to fill up a single row of the resulting matrix, our second idea explored the process of having each thread simultaneously compute a single value in the resulting product matrix. When multiplying two matrices $A \times B$ to produce a result matrix $C$, each row $i$ in matrix $A$ needs to be multiplied by each column $j$ in matrix $B$ producing the value for position $(i, j)$ in $C$. The fundamental idea around the approach we came up with is that each thread will do the computation of multiplying a row in matrix $A$ and a column in matrix $B$ to produce a single value that will populate a unique cell in matrix $C$.
 
-\subsection{Figures and Tables}
-\paragraph{Positioning Figures and Tables} Place figures and tables at the top and 
-bottom of columns. Avoid placing them in the middle of columns. Large 
-figures and tables may span across both columns. Figure captions should be 
-below the figures; table heads should appear above the tables. Insert 
-figures and tables after they are cited in the text. Use the abbreviation 
-``Fig.~\ref{fig}'', even at the beginning of a sentence.
+For example, imagine that we are multiplying two matrices and the product matrix is of size $3 \times 2$, then there would need to be $6$ total threads that each multiply a single row and column from the two input matrices. The result of each thread’s row, column multiplication can then be written to a corresponding cell in the product matrix. Once all $6$ threads finish executing, then all $6$ cells of the product matrix will be filled up, meaning that the two input matrices have been successfully multiplied together.
 
-\begin{table}[htbp]
-\caption{Table Type Styles}
-\begin{center}
-\begin{tabular}{|c|c|c|c|}
-\hline
-\textbf{Table}&\multicolumn{3}{|c|}{\textbf{Table Column Head}} \\
-\cline{2-4} 
-\textbf{Head} & \textbf{\textit{Table column subhead}}& \textbf{\textit{Subhead}}& \textbf{\textit{Subhead}} \\
-\hline
-copy& More table copy$^{\mathrm{a}}$& &  \\
-\hline
-\multicolumn{4}{l}{$^{\mathrm{a}}$Sample of a Table footnote.}
-\end{tabular}
-\label{tab1}
-\end{center}
-\end{table}
+Before fully considering this approach, we wanted to ensure that this concurrent approach of multiplying two matrices would not lead to any contention or race conditions. Since each thread is only reading from the two input matrices without modifying any of the values in the input matrices, there should never be any issues where two threads read different values from the same cell in an input matrix. Furthermore, this means that threads will never have to wait on anything in the input matrices since none of the input matrices’ values will ever be modified during the time that these two matrices are being multiplied.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics{images/fig1.png}}
-\caption{Example of a figure caption.}
-\label{fig}
-\end{figure}
+Additionally, there should never be any issues where multiple threads are writing a value into the product matrix at the same time. This is due to the fact that each thread will be in charge of multiplying a unique row and column combination that will result in filling up a unique cell in the product matrix. Each cell in a matrix is represented by a location in memory that stores the value for that cell. Since each thread is responsible for writing to a unique cell in the product matrix, they should never write to the same location in memory.
 
-Figure Labels: Use 8 point Times New Roman for Figure labels. Use words 
-rather than symbols or abbreviations when writing Figure axis labels to 
-avoid confusing the reader. As an example, write the quantity 
-``Magnetization'', or ``Magnetization, M'', not just ``M''. If including 
-units in the label, present them within parentheses. Do not label axes only 
-with units. In the example, write ``Magnetization (A/m)'' or ``Magnetization 
-\{A[m(1)]\}'', not just ``A/m''. Do not label axes with a ratio of 
-quantities and units. For example, write ``Temperature (K)'', not 
-``Temperature/K''.
+% \section{Prepare Your Paper Before Styling}
+% Before you begin to format your paper, first write and save the content as a 
+% separate text file. Complete all content and organizational editing before 
+% formatting. Please note sections \ref{AA}--\ref{SCM} below for more information on 
+% proofreading, spelling and grammar.
 
-\section*{Acknowledgment}
+% Keep your text and graphic files separate until after the text has been 
+% formatted and styled. Do not number text heads---{\LaTeX} will do that 
+% for you.
 
-The preferred spelling of the word ``acknowledgment'' in America is without 
-an ``e'' after the ``g''. Avoid the stilted expression ``one of us (R. B. 
-G.) thanks $\ldots$''. Instead, try ``R. B. G. thanks$\ldots$''. Put sponsor 
-acknowledgments in the unnumbered footnote on the first page.
+% \subsection{Abbreviations and Acronyms}\label{AA}
+% Define abbreviations and acronyms the first time they are used in the text, 
+% even after they have been defined in the abstract. Abbreviations such as 
+% IEEE, SI, MKS, CGS, ac, dc, and rms do not have to be defined. Do not use 
+% abbreviations in the title or heads unless they are unavoidable.
 
-\section*{References}
+% \subsection{Units}
+% \begin{itemize}
+% \item Use either SI (MKS) or CGS as primary units. (SI units are encouraged.) English units may be used as secondary units (in parentheses). An exception would be the use of English units as identifiers in trade, such as ``3.5-inch disk drive''.
+% \item Avoid combining SI and CGS units, such as current in amperes and magnetic field in oersteds. This often leads to confusion because equations do not balance dimensionally. If you must use mixed units, clearly state the units for each quantity that you use in an equation.
+% \item Do not mix complete spellings and abbreviations of units: ``Wb/m\textsuperscript{2}'' or ``webers per square meter'', not ``webers/m\textsuperscript{2}''. Spell out units when they appear in text: ``. . . a few henries'', not ``. . . a few H''.
+% \item Use a zero before decimal points: ``0.25'', not ``.25''. Use ``cm\textsuperscript{3}'', not ``cc''.)
+% \end{itemize}
 
-Please number citations consecutively within brackets \cite{b1}. The 
-sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference 
-number, as in \cite{b3}---do not use ``Ref. \cite{b3}'' or ``reference \cite{b3}'' except at 
-the beginning of a sentence: ``Reference \cite{b3} was the first $\ldots$''
+% \subsection{Equations}
+% Number equations consecutively. To make your 
+% equations more compact, you may use the solidus (~/~), the exp function, or 
+% appropriate exponents. Italicize Roman symbols for quantities and variables, 
+% but not Greek symbols. Use a long dash rather than a hyphen for a minus 
+% sign. Punctuate equations with commas or periods when they are part of a 
+% sentence, as in:
+% \begin{equation}
+% a+b=\gamma\label{eq}
+% \end{equation}
 
-Number footnotes separately in superscripts. Place the actual footnote at 
-the bottom of the column in which it was cited. Do not put footnotes in the 
-abstract or reference list. Use letters for table footnotes.
+% Be sure that the 
+% symbols in your equation have been defined before or immediately following 
+% the equation. Use ``\eqref{eq}'', not ``Eq.~\eqref{eq}'' or ``equation \eqref{eq}'', except at 
+% the beginning of a sentence: ``Equation \eqref{eq} is . . .''
 
-Unless there are six authors or more give all authors' names; do not use 
-``et al.''. Papers that have not been published, even if they have been 
-submitted for publication, should be cited as ``unpublished'' \cite{b4}. Papers 
-that have been accepted for publication should be cited as ``in press'' \cite{b5}. 
-Capitalize only the first word in a paper title, except for proper nouns and 
-element symbols.
+% \subsection{\LaTeX-Specific Advice}
 
-For papers published in translation journals, please give the English 
-citation first, followed by the original foreign-language citation \cite{b6}.
+% Please use ``soft'' (e.g., \verb|\eqref{Eq}|) cross references instead
+% of ``hard'' references (e.g., \verb|(1)|). That will make it possible
+% to combine sections, add equations, or change the order of figures or
+% citations without having to go through the file line by line.
+
+% Please don't use the \verb|{eqnarray}| equation environment. Use
+% \verb|{align}| or \verb|{IEEEeqnarray}| instead. The \verb|{eqnarray}|
+% environment leaves unsightly spaces around relation symbols.
+
+% Please note that the \verb|{subequations}| environment in {\LaTeX}
+% will increment the main equation counter even when there are no
+% equation numbers displayed. If you forget that, you might write an
+% article in which the equation numbers skip from (17) to (20), causing
+% the copy editors to wonder if you've discovered a new method of
+% counting.
+
+% {\BibTeX} does not work by magic. It doesn't get the bibliographic
+% data from thin air but from .bib files. If you use {\BibTeX} to produce a
+% bibliography you must send the .bib files. 
+
+% {\LaTeX} can't read your mind. If you assign the same label to a
+% subsubsection and a table, you might find that Table I has been cross
+% referenced as Table IV-B3. 
+
+% {\LaTeX} does not have precognitive abilities. If you put a
+% \verb|\label| command before the command that updates the counter it's
+% supposed to be using, the label will pick up the last counter to be
+% cross referenced instead. In particular, a \verb|\label| command
+% should not go before the caption of a figure or a table.
+
+% Do not use \verb|\nonumber| inside the \verb|{array}| environment. It
+% will not stop equation numbers inside \verb|{array}| (there won't be
+% any anyway) and it might stop a wanted equation number in the
+% surrounding equation.
+
+% \subsection{Some Common Mistakes}\label{SCM}
+% \begin{itemize}
+% \item The word ``data'' is plural, not singular.
+% \item The subscript for the permeability of vacuum $\mu_{0}$, and other common scientific constants, is zero with subscript formatting, not a lowercase letter ``o''.
+% \item In American English, commas, semicolons, periods, question and exclamation marks are located within quotation marks only when a complete thought or name is cited, such as a title or full quotation. When quotation marks are used, instead of a bold or italic typeface, to highlight a word or phrase, punctuation should appear outside of the quotation marks. A parenthetical phrase or statement at the end of a sentence is punctuated outside of the closing parenthesis (like this). (A parenthetical sentence is punctuated within the parentheses.)
+% \item A graph within a graph is an ``inset'', not an ``insert''. The word alternatively is preferred to the word ``alternately'' (unless you really mean something that alternates).
+% \item Do not use the word ``essentially'' to mean ``approximately'' or ``effectively''.
+% \item In your paper title, if the words ``that uses'' can accurately replace the word ``using'', capitalize the ``u''; if not, keep using lower-cased.
+% \item Be aware of the different meanings of the homophones ``affect'' and ``effect'', ``complement'' and ``compliment'', ``discreet'' and ``discrete'', ``principal'' and ``principle''.
+% \item Do not confuse ``imply'' and ``infer''.
+% \item The prefix ``non'' is not a word; it should be joined to the word it modifies, usually without a hyphen.
+% \item There is no period after the ``et'' in the Latin abbreviation ``et al.''.
+% \item The abbreviation ``i.e.'' means ``that is'', and the abbreviation ``e.g.'' means ``for example''.
+% \end{itemize}
+% An excellent style manual for science writers is \cite{b7}.
+
+% \subsection{Authors and Affiliations}
+% \textbf{The class file is designed for, but not limited to, six authors.} A 
+% minimum of one author is required for all conference articles. Author names 
+% should be listed starting from left to right and then moving down to the 
+% next line. This is the author sequence that will be used in future citations 
+% and by indexing services. Names should not be listed in columns nor group by 
+% affiliation. Please keep your affiliations as succinct as possible (for 
+% example, do not differentiate among departments of the same organization).
+
+% \subsection{Identify the Headings}
+% Headings, or heads, are organizational devices that guide the reader through 
+% your paper. There are two types: component heads and text heads.
+
+% Component heads identify the different components of your paper and are not 
+% topically subordinate to each other. Examples include Acknowledgments and 
+% References and, for these, the correct style to use is ``Heading 5''. Use 
+% ``figure caption'' for your Figure captions, and ``table head'' for your 
+% table title. Run-in heads, such as ``Abstract'', will require you to apply a 
+% style (in this case, italic) in addition to the style provided by the drop 
+% down menu to differentiate the head from the text.
+
+% Text heads organize the topics on a relational, hierarchical basis. For 
+% example, the paper title is the primary text head because all subsequent 
+% material relates and elaborates on this one topic. If there are two or more 
+% sub-topics, the next level head (uppercase Roman numerals) should be used 
+% and, conversely, if there are not at least two sub-topics, then no subheads 
+% should be introduced.
+
+% \subsection{Figures and Tables}
+% \paragraph{Positioning Figures and Tables} Place figures and tables at the top and 
+% bottom of columns. Avoid placing them in the middle of columns. Large 
+% figures and tables may span across both columns. Figure captions should be 
+% below the figures; table heads should appear above the tables. Insert 
+% figures and tables after they are cited in the text. Use the abbreviation 
+% ``Fig.~\ref{fig}'', even at the beginning of a sentence.
+
+% \begin{table}[htbp]
+% \caption{Table Type Styles}
+% \begin{center}
+% \begin{tabular}{|c|c|c|c|}
+% \hline
+% \textbf{Table}&\multicolumn{3}{|c|}{\textbf{Table Column Head}} \\
+% \cline{2-4} 
+% \textbf{Head} & \textbf{\textit{Table column subhead}}& \textbf{\textit{Subhead}}& \textbf{\textit{Subhead}} \\
+% \hline
+% copy& More table copy$^{\mathrm{a}}$& &  \\
+% \hline
+% \multicolumn{4}{l}{$^{\mathrm{a}}$Sample of a Table footnote.}
+% \end{tabular}
+% \label{tab1}
+% \end{center}
+% \end{table}
+
+% \begin{figure}[htbp]
+% \centerline{\includegraphics{images/fig1.png}}
+% \caption{Example of a figure caption.}
+% \label{fig}
+% \end{figure}
+
+% Figure Labels: Use 8 point Times New Roman for Figure labels. Use words 
+% rather than symbols or abbreviations when writing Figure axis labels to 
+% avoid confusing the reader. As an example, write the quantity 
+% ``Magnetization'', or ``Magnetization, M'', not just ``M''. If including 
+% units in the label, present them within parentheses. Do not label axes only 
+% with units. In the example, write ``Magnetization (A/m)'' or ``Magnetization 
+% \{A[m(1)]\}'', not just ``A/m''. Do not label axes with a ratio of 
+% quantities and units. For example, write ``Temperature (K)'', not 
+% ``Temperature/K''.
+
+% \section*{Acknowledgment}
+
+% The preferred spelling of the word ``acknowledgment'' in America is without 
+% an ``e'' after the ``g''. Avoid the stilted expression ``one of us (R. B. 
+% G.) thanks $\ldots$''. Instead, try ``R. B. G. thanks$\ldots$''. Put sponsor 
+% acknowledgments in the unnumbered footnote on the first page.
 
 \begin{thebibliography}{00}
-\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
-\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
-\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
-\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
-\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
-\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
+\bibitem{b1} Hu, TC; Shing, MT (1981). Computation of Matrix Chain Products, Part I, Part II (PDF) (Technical report). Stanford University, Department of Computer Science. Part II, page 3. STAN-CS-TR-81-875.
+\bibitem{b2} Wang, Xiaodong; Zhu, Daxin; Tian, Jun (April 2013). "Efficient computation of matrix chain". 2013 8th International Conference on Computer Science Education: 703–707. doi:10.1109/ICCSE.2013.6553999.
+\bibitem{b3} Chin, Francis Y. (July 1978). "An O(n) algorithm for determining a near-optimal computation order of matrix chain products". Communications of the ACM. 21 (7): 544–549. doi:10.1145/359545.359556.
+\bibitem{b4} Hu, T.C; Shing, M.T (June 1981). "An O(n) algorithm to find a near-optimum partition of a convex polygon". Journal of Algorithms. 2 (2): 122–138. doi:10.1016/0196-6774(81)90014-6.
 \end{thebibliography}
-\vspace{12pt}
-\color{red}
-IEEE conference templates contain guidance text for composing and formatting conference papers. Please ensure that all template text is removed from your conference paper prior to submission to the conference. Failure to remove the template text from your paper may result in your paper not being published.
-
 \end{document}
