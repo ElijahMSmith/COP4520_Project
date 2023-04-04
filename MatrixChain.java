@@ -1,13 +1,21 @@
-public class MatrixChain {
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+public class MatrixChain {
+    public static final int THREAD_NO = 10;
     private Matrix[] chain;
+    private ExecutorService executorService;
 
     public MatrixChain(Matrix[] chain) {
         this.chain = chain;
+        executorService = Executors.newFixedThreadPool(THREAD_NO);
     }
 
     public MatrixChain(int length) {
         chain = new Matrix[length];
+        executorService = Executors.newFixedThreadPool(THREAD_NO);
     }
 
     /*
@@ -96,15 +104,23 @@ public class MatrixChain {
         if (i < j) {
             Matrix X = multiplyOut(s, i, s[i][j]);
             Matrix Y = multiplyOut(s, s[i][j] + 1, j);
-            return X.multiply(Y);
+            return X.multiply(Y, (ThreadPoolExecutor) executorService);
         }
+
         // Matrix chain is 0-indexed, where other calcs are not
         return chain[i - 1];
     }
 
     public Matrix multiplyOut() {
         int[][] s = getBestMultiplicationOrdering();
-        return multiplyOut(s, 1, chain.length);
+        Matrix retval = multiplyOut(s, 1, chain.length);
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("Yikes!");
+        }
+        return retval;
     }
 
     /*
