@@ -4,7 +4,6 @@ import java.io.PrintStream;
 
 import src.Matrix;
 import src.MatrixChain;
-import src.ParallelOptimizationChain;
 
 public class Main {
 
@@ -18,11 +17,11 @@ public class Main {
 
         String inFile = "in/test" + testno + ".txt";
         String outFile = "out/test" + testno + ".txt";
-        MatrixChain chain = new ParallelOptimizationChain(inFile);
+        MatrixChain chain = new MatrixChain(inFile);
 
         PrintStream stream = new PrintStream(new File(outFile));
-        Matrix res = chain.multiplyOut();
         System.setOut(stream);
+        Matrix res = chain.multiplyOut();
         System.out.println(res);
     }
 }

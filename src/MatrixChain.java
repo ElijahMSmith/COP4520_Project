@@ -96,13 +96,7 @@ public class MatrixChain {
             }
         }
 
-        for (int i = 0; i <= N; i++) {
-            for (int j = 0; j <= N; j++) {
-                System.out.print(dp[i][j] + " ");
-            }
-            System.out.println();
-        }
-
+        // Print minimum number of operations required to out file
         System.out.println(dp[1][N]);
         return s;
     }
@@ -121,6 +115,7 @@ public class MatrixChain {
         return chain[i - 1];
     }
 
+    // Same as above, but performed on a single thread
     protected Matrix multiplyOutSmartSync(int[][] s, int i, int j) {
         if (i < j) {
             Matrix X = multiplyOutSmartSync(s, i, s[i][j]);
@@ -128,7 +123,6 @@ public class MatrixChain {
             return X.multiply(Y);
         }
 
-        // Matrix chain is 0-indexed, where other calcs are not
         return chain[i - 1];
     }
 
@@ -153,7 +147,7 @@ public class MatrixChain {
         try {
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.out.println("Yikes!");
+            System.out.println("Executor took longer than one minute :(");
         }
         return retval;
     }
