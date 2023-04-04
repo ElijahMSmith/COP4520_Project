@@ -15,12 +15,10 @@ public class MatrixChain {
 
     public MatrixChain(Matrix[] chain) {
         this.chain = chain;
-        executorService = Executors.newFixedThreadPool(THREAD_NO);
     }
 
     public MatrixChain(int length) {
         chain = new Matrix[length];
-        executorService = Executors.newFixedThreadPool(THREAD_NO);
     }
 
     public MatrixChain(String fileName) throws FileNotFoundException {
@@ -51,28 +49,6 @@ public class MatrixChain {
     }
 
     /*
-     * Ways to introduce concurrency to optimization
-     * 
-     * Option 1: Make DP parallel (Eli currently trying to tackle this)
-     * Have each length of subproblem be a separate thread
-     * Threads can line up in queues and the queue can give them the next largest
-     * When they finish, they return to the queue and spin
-     * Spin can spin perhaps on its own local l variable
-     * When it finishes, set l to -1 then join the queue
-     * When l is finally not -1, go back and calculate matrices
-     * When controller runs out of l to assign, stop each thread (or set some flag
-     * to let them know they should exit)
-     * 
-     * Option 2: Make exponential algorithm parallel
-     * Start X threads and give them some part of the possible divisions at the
-     * highest level (when considering the entire chain)
-     * Let them compute everything required for all their assigned divisions
-     * Compare the minimum between all threads
-     * Have each thread store some rep of everywhere that was divided so that the
-     * matrix ordering can be recovered
-     */
-
-    /*
      * Returns the ordering of matrix multiplications for the entire chain
      * that results in the lowest possible number of operations.
      * 
@@ -81,7 +57,6 @@ public class MatrixChain {
      * index in the chain of the left array in the ith multiplication pair to
      * achieve this minimum
      */
-
     protected int[][] getBestMultiplicationOrdering() {
         int N = chain.length;
 
@@ -135,10 +110,10 @@ public class MatrixChain {
     // s[i][j] is the place in subchain i -> j [1, N] to insert a division
     // Take each smaller chain around the division and repeat
     // When we get to just a single matrix (i == j) use that (like mergesort)
-    protected Matrix multiplyOut(int[][] s, int i, int j) {
+    protected Matrix multiplyOutSmartThreaded(int[][] s, int i, int j) {
         if (i < j) {
-            Matrix X = multiplyOut(s, i, s[i][j]);
-            Matrix Y = multiplyOut(s, s[i][j] + 1, j);
+            Matrix X = multiplyOutSmartThreaded(s, i, s[i][j]);
+            Matrix Y = multiplyOutSmartThreaded(s, s[i][j] + 1, j);
             return X.multiply(Y, (ThreadPoolExecutor) executorService);
         }
 
@@ -146,9 +121,34 @@ public class MatrixChain {
         return chain[i - 1];
     }
 
+    protected Matrix multiplyOutSmartSync(int[][] s, int i, int j) {
+        if (i < j) {
+            Matrix X = multiplyOutSmartSync(s, i, s[i][j]);
+            Matrix Y = multiplyOutSmartSync(s, s[i][j] + 1, j);
+            return X.multiply(Y);
+        }
+
+        // Matrix chain is 0-indexed, where other calcs are not
+        return chain[i - 1];
+    }
+
+    /*
+     * Returns the result of multiplying every matrix in this chain using the
+     * optimal ordering that results in the fewest number of operations.
+     */
+    public Matrix multipleOutBruteForce() {
+        for (int i = 0; i < chain.length - 1; i++)
+            chain[i + 1] = chain[i].multiply(chain[i + 1]);
+
+        chain = new Matrix[] { chain[chain.length - 1] };
+        return chain[0];
+    }
+
     public Matrix multiplyOut() {
         int[][] s = getBestMultiplicationOrdering();
-        Matrix retval = multiplyOut(s, 1, chain.length);
+
+        executorService = Executors.newFixedThreadPool(THREAD_NO);
+        Matrix retval = multiplyOutSmartThreaded(s, 1, chain.length);
         executorService.shutdown();
         try {
             executorService.awaitTermination(60, TimeUnit.SECONDS);
@@ -156,19 +156,5 @@ public class MatrixChain {
             System.out.println("Yikes!");
         }
         return retval;
-    }
-
-    /*
-     * Returns the result of multiplying every matrix in this chain using the
-     * optimal ordering
-     * that results in the fewest number of operations.
-     */
-    public Matrix multiplyOutNaive() {
-        // TODO: Make parallel and use optimal ordering
-        for (int i = 0; i < chain.length - 1; i++)
-            chain[i + 1] = chain[i].multiply(chain[i + 1]);
-
-        chain = new Matrix[] { chain[chain.length - 1] };
-        return chain[0];
     }
 }
