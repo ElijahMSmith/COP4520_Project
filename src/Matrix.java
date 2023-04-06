@@ -1,9 +1,9 @@
+package src;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 class MultThread implements Runnable {
     Matrix a;
@@ -33,26 +33,32 @@ class MultThread implements Runnable {
 public class Matrix {
     private int rows;
     private int cols;
-    public int[][] values;
+    public long[][] values;
 
     public Matrix(int rows, int cols) {
-        values = new int[rows][cols];
+        values = new long[rows][cols];
         this.rows = rows;
         this.cols = cols;
     }
 
-    public Matrix(int[][] values) {
+    public Matrix(long[][] values) {
         this.values = values;
+        this.rows = values.length;
+        if (rows == 0)
+            this.cols = 0;
+        else
+            this.cols = values[0].length;
     }
 
     public Matrix(String fileName) throws FileNotFoundException {
         Scanner sc = new Scanner(new File(fileName));
         rows = sc.nextInt();
         cols = sc.nextInt();
-        values = new int[rows][cols];
+        values = new long[rows][cols];
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                values[i][j] = sc.nextInt();
+                values[i][j] = sc.nextLong();
             }
         }
         sc.close();
@@ -99,6 +105,7 @@ public class Matrix {
     @Override
     public String toString() {
         StringBuilder build = new StringBuilder();
+        build.append(rows + " " + cols + "\n");
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++)
                 build.append(values[i][j] + (j < cols - 1 ? "\t" : ""));

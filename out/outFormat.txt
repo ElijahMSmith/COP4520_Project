@@ -1,0 +1,5 @@
+min#operations
+resultR(n) resultC(m)
+result[0][0] ... result[0][m - 1]
+.................................
+result[n - 1][0] ... result[n - 1][m - 1]
