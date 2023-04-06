@@ -98,13 +98,16 @@ public class Matrix {
     public Matrix multiply(Matrix other, ThreadPoolExecutor pool) {
         Matrix newMatrix = new Matrix(this.rows, other.cols);
 
+        long tasksDoneBefore = pool.getCompletedTaskCount();
+        long tasksToBeComputed = this.rows * other.cols;
+
         for (int thisR = 0; thisR < this.rows; thisR++) {
             for (int otherC = 0; otherC < other.cols; otherC++) {
                 pool.execute(new MultThread(this, other, newMatrix, thisR, otherC));
             }
         }
 
-        while (pool.getActiveCount() != 0)
+        while (pool.getCompletedTaskCount() - tasksDoneBefore < tasksToBeComputed)
             ;
         return newMatrix;
     }
