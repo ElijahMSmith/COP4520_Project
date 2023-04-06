@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MatrixChain {
-    public static final int THREAD_NO = 10;
+    public static int THREAD_NO = 10;
     private Matrix[] chain;
     private ExecutorService executorService;
 
@@ -98,7 +98,7 @@ public class MatrixChain {
         }
 
         // Print minimum number of operations required to out file
-        System.out.println(dp[1][N]);
+        // System.out.println(dp[1][N]);
         return s;
     }
 
