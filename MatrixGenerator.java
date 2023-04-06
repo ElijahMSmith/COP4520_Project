@@ -6,8 +6,8 @@ public class MatrixGenerator {
     static final int MAX_COLS = 10;
     static final int MAX_ROWS = 10;
     static final int MAX_VALUE = 10;
-    static final int MIN_MATRICES = 200;
-    static final int MAX_MATRICES = 300;
+    static final int MIN_MATRICES = 10;
+    static final int MAX_MATRICES = 20;
     static final String outPath = "in/";
 
     public static void main(String[] args) throws FileNotFoundException {

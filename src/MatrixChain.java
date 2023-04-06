@@ -2,6 +2,7 @@ package src;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.math.BigInteger;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,11 +32,11 @@ public class MatrixChain {
             while (i < inputLen) {
                 int r = sc.nextInt();
                 int c = sc.nextInt();
-                long[][] temp = new long[r][c];
+                BigInteger[][] temp = new BigInteger[r][c];
 
                 for (int rx = 0; rx < r; rx++) {
                     for (int cx = 0; cx < c; cx++) {
-                        temp[rx][cx] = sc.nextLong();
+                        temp[rx][cx] = new BigInteger(sc.next().trim());
                     }
                 }
 

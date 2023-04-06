@@ -2,6 +2,7 @@ package src;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.math.BigInteger;
 import java.util.Scanner;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -22,9 +23,9 @@ class MultThread implements Runnable {
 
     @Override
     public void run() {
-        int resultVal = 0;
+        BigInteger resultVal = new BigInteger("0");
         for (int i = 0; i < a.cols(); i++) {
-            resultVal += a.values[row][i] * b.values[i][col];
+            resultVal = resultVal.add(a.values[row][i].multiply(b.values[i][col]));
         }
         result.values[row][col] = resultVal;
     }
@@ -33,15 +34,21 @@ class MultThread implements Runnable {
 public class Matrix {
     private int rows;
     private int cols;
-    public long[][] values;
+    public BigInteger[][] values;
 
     public Matrix(int rows, int cols) {
-        values = new long[rows][cols];
+        values = new BigInteger[rows][cols];
         this.rows = rows;
         this.cols = cols;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                values[i][j] = new BigInteger("0");
+            }
+        }
     }
 
-    public Matrix(long[][] values) {
+    public Matrix(BigInteger[][] values) {
         this.values = values;
         this.rows = values.length;
         if (rows == 0)
@@ -54,11 +61,11 @@ public class Matrix {
         Scanner sc = new Scanner(new File(fileName));
         rows = sc.nextInt();
         cols = sc.nextInt();
-        values = new long[rows][cols];
+        values = new BigInteger[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                values[i][j] = sc.nextLong();
+                values[i][j] = new BigInteger(sc.next().trim());
             }
         }
         sc.close();
@@ -80,7 +87,7 @@ public class Matrix {
         for (int thisR = 0; thisR < this.rows; thisR++) {
             for (int otherC = 0; otherC < other.cols; otherC++) {
                 for (int i = 0; i < innerDim; i++) {
-                    newMatrix.values[thisR][otherC] += this.values[thisR][i] * other.values[i][otherC];
+                    newMatrix.values[thisR][otherC] = newMatrix.values[thisR][otherC].add(this.values[thisR][i].multiply(other.values[i][otherC]));
                 }
             }
         }
