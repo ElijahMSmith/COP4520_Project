@@ -52,21 +52,26 @@ public class Main {
             for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
                 // Multiply chain out using brute force approach and record runtime
                 long startTimeBruteForce = System.currentTimeMillis();
-                chain.multiplyOutBruteForce();
+                Matrix resBruteForce = chain.multiplyOutBruteForce();
                 long endTimeBruteForce = System.currentTimeMillis();
                 bruteForceRuntimes += endTimeBruteForce - startTimeBruteForce;
 
                 // Multiply chain out using efficient ordering on single thread approach and record runtime
                 long startTimeSyncSmartOrdering = System.currentTimeMillis();
-                chain.multiplyOut(false);
+                Matrix resSyncSmartOrdering = chain.multiplyOut(false);
                 long endTimeSyncSmartOrdering = System.currentTimeMillis();
                 syncSmartOrderingRuntimes += endTimeSyncSmartOrdering - startTimeSyncSmartOrdering;
 
                 // Multiply chain out using efficient ordering and multiple threads approach and record runtime
                 long startTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
-                chain.multiplyOut(true);
+                Matrix resMultiThreadedSmartOrdering = chain.multiplyOut(true);
                 long endTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
                 multiThreadedSmartOrderingRuntimes += endTimeMultiThreadedSmartOrdering - startTimeMultiThreadedSmartOrdering;
+
+                if (!matricesAreEqual(resBruteForce, resSyncSmartOrdering, resMultiThreadedSmartOrdering)) {
+                    System.out.println("Incorrect results from matrix multiplication.");
+                    return;
+                }
             }
 
             // Average out the runtimes for all three approaches
@@ -135,5 +140,18 @@ public class Main {
 
         // Print result array
         System.out.println(Arrays.toString(res));
+    }
+
+    // Helper function to confirm/verify that three matrices contain identical values
+    private static boolean matricesAreEqual(Matrix matrix1, Matrix matrix2, Matrix matrix3) {
+        for (int i = 0; i < matrix1.rows(); i++) {
+            for (int j = 0; j < matrix1.cols(); j++) {
+                if (!matrix1.values[i][j].equals(matrix2.values[i][j]) || !matrix2.values[i][j].equals(matrix3.values[i][j])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
