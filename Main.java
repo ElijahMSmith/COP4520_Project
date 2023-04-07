@@ -50,10 +50,9 @@ public class Main {
 
             // Run multiple trials for each approach on same test case
             for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
-                System.out.println(i);
                 // Multiply chain out using brute force approach and record runtime
                 long startTimeBruteForce = System.currentTimeMillis();
-                //chain.multiplyOutBruteForce();
+                chain.multiplyOutBruteForce();
                 long endTimeBruteForce = System.currentTimeMillis();
                 bruteForceRuntimes += endTimeBruteForce - startTimeBruteForce;
 
