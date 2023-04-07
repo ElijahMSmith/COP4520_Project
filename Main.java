@@ -13,7 +13,11 @@ public class Main {
     private static final int MIN_TEST_THREAD_COUNT = 1;
     private static final int MAX_TEST_THREAD_COUNT = 20;
     private static final int NUM_THREAD_COUNT_TEST_TRIALS = 5;
-    private static final boolean TESTING_THREAD_COUNTS = true;
+    private static final boolean TESTING_THREAD_COUNTS = false;
+
+    // Parameters to test performance of three approaches for multiplying matrix chain
+    private static final int NUM_PERFORMANCE_TRIALS = 5;
+    private static final boolean TESTING_PERFORMANCE = true;
 
     public static void main(String[] args) throws FileNotFoundException {
         int testno = 1;
@@ -36,6 +40,45 @@ public class Main {
 
             // Take average of all trials testing various thread counts and print
             printAverageArray(runtimeTrialArrays);
+
+            return;
+        }
+        else if (TESTING_PERFORMANCE) {
+            long bruteForceRuntimes = 0;
+            long syncSmartOrderingRuntimes = 0;
+            long multiThreadedSmartOrderingRuntimes = 0;
+
+            // Run multiple trials for each approach on same test case
+            for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
+                System.out.println(i);
+                // Multiply chain out using brute force approach and record runtime
+                long startTimeBruteForce = System.currentTimeMillis();
+                //chain.multiplyOutBruteForce();
+                long endTimeBruteForce = System.currentTimeMillis();
+                bruteForceRuntimes += endTimeBruteForce - startTimeBruteForce;
+
+                // Multiply chain out using efficient ordering on single thread approach and record runtime
+                long startTimeSyncSmartOrdering = System.currentTimeMillis();
+                chain.multiplyOut(false);
+                long endTimeSyncSmartOrdering = System.currentTimeMillis();
+                syncSmartOrderingRuntimes += endTimeSyncSmartOrdering - startTimeSyncSmartOrdering;
+
+                // Multiply chain out using efficient ordering and multiple threads approach and record runtime
+                long startTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
+                chain.multiplyOut(true);
+                long endTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
+                multiThreadedSmartOrderingRuntimes += endTimeMultiThreadedSmartOrdering - startTimeMultiThreadedSmartOrdering;
+            }
+
+            // Average out the runtimes for all three approaches
+            double avgBruteForceRuntime = bruteForceRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+            double avgSyncSmartOrderingRuntime = syncSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+            double avgMultiThreadedSmartOrderingRuntim = multiThreadedSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+
+            // Print results
+            System.out.println("Average brute force runtime: " + avgBruteForceRuntime + "ms");
+            System.out.println("Average synchronous runtime with efficient ordering: " + avgSyncSmartOrderingRuntime + "ms");
+            System.out.println("Average multithreaded runtime with efficient ordering: " + avgMultiThreadedSmartOrderingRuntim + "ms");
 
             return;
         }
