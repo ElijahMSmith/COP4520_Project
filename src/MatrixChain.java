@@ -109,6 +109,8 @@ public class MatrixChain {
         if (i < j) {
             Matrix X = multiplyOutSmartThreaded(s, i, s[i][j]);
             Matrix Y = multiplyOutSmartThreaded(s, s[i][j] + 1, j);
+
+            // Return resulting matrix of multithreaded multiplication operation
             return X.multiply(Y, (ThreadPoolExecutor) executorService);
         }
 
@@ -131,7 +133,7 @@ public class MatrixChain {
      * Returns the result of multiplying every matrix in this chain using the
      * optimal ordering that results in the fewest number of operations.
      */
-    public Matrix multipleOutBruteForce() {
+    public Matrix multiplyOutBruteForce() {
         for (int i = 0; i < chain.length - 1; i++)
             chain[i + 1] = chain[i].multiply(chain[i + 1]);
 
@@ -139,17 +141,33 @@ public class MatrixChain {
         return chain[0];
     }
 
-    public Matrix multiplyOut() {
-        int[][] s = getBestMultiplicationOrdering();
 
-        executorService = Executors.newFixedThreadPool(THREAD_NO);
-        Matrix retval = multiplyOutSmartThreaded(s, 1, chain.length);
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(60, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            System.out.println("Executor took longer than one minute :(");
+    /* Root function called to multiply out chain of matrices */
+    public Matrix multiplyOut(boolean useMultipleThreads) {
+        int[][] s = getBestMultiplicationOrdering();
+        Matrix retval;
+
+        if (useMultipleThreads) {
+            // Setup thread pool with fixed number of threads to be used on individual matrix mutliplication operations
+            executorService = Executors.newFixedThreadPool(THREAD_NO);
+
+            // Multiply matrices on multiple threads and use efficient ordering
+            retval = multiplyOutSmartThreaded(s, 1, chain.length);
+
+            // Done using thread pool so shut it down and make sure it waits till
+            // resources for thread pool have closed before returning
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(60, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                System.out.println("Executor took longer than one minute :(");
+            }
         }
+        else {
+            // Multiply matrix chain on single thread but still use efficient ordering
+            retval = multiplyOutSmartSync(s, 1, chain.length);
+        }
+
         return retval;
     }
 }

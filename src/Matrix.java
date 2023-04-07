@@ -17,16 +17,23 @@ class MultThread implements Runnable {
         this.a = a;
         this.b = b;
         this.result = result;
-        row = i;
-        col = j;
+        this.row = i;
+        this.col = j;
     }
 
+    // Responsible for multiplying row "row" of matrix "a" with column "col" of matrix "b" and
+    // storing the result at position ("row", "col") in matrix "result"
     @Override
     public void run() {
         BigInteger resultVal = new BigInteger("0");
+
+        // Iterate through specified row/column of matrix a and b, multiplying each matching cell and adding to
+        // the result sum
         for (int i = 0; i < a.cols(); i++) {
             resultVal = resultVal.add(a.values[row][i].multiply(b.values[i][col]));
         }
+
+        // Assign this row/column multiplication result into specified position in the result matrix
         result.values[row][col] = resultVal;
     }
 }
@@ -95,20 +102,30 @@ public class Matrix {
         return newMatrix;
     }
 
+    // Multithreaded Version
     public Matrix multiply(Matrix other, ThreadPoolExecutor pool) {
+        // Create empty result matrix
         Matrix newMatrix = new Matrix(this.rows, other.cols);
 
+        // Get the number of tasks that the thread pool completed before getting to this multiplication step
         long tasksDoneBefore = pool.getCompletedTaskCount();
+
+        // Get number of individual row/column multiplications that will need to be completed to get result matrix
         long tasksToBeComputed = this.rows * other.cols;
 
+        // Iterate through each cell of result matrix to get its value
         for (int thisR = 0; thisR < this.rows; thisR++) {
             for (int otherC = 0; otherC < other.cols; otherC++) {
+                // Spawn a task for the thread pool that will multiply the current row and column of the input matrices
+                // and assign this value to the current (row, column) cell of the result matrix
                 pool.execute(new MultThread(this, other, newMatrix, thisR, otherC));
             }
         }
 
+        // Wait until all tasks for the result matrix have been completed
         while (pool.getCompletedTaskCount() - tasksDoneBefore < tasksToBeComputed)
             ;
+
         return newMatrix;
     }
 
