@@ -67,8 +67,8 @@ public class ParallelOptimizationChain extends MatrixChain {
                         BigInteger q = v1.add(v2)
                                 .add(BigInteger.valueOf(dims[i - 1] * dims[k] * dims[j]));
 
-                        // Update if first possible partition (k == i) and dp[i][j] is still null or if
-                        // this partition is the best case
+                        // Update if first possible partition (k == i, dp[i][j] is still null)
+                        // or if this partition is the best case
                         if (k == i || q.compareTo(dp[i][j]) < 0) {
                             dp[i][j] = q;
                             s[i][j] = k;
