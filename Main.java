@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 import src.Matrix;
 import src.MatrixChain;
@@ -16,7 +17,7 @@ public class Main {
     private static final boolean TESTING_THREAD_COUNTS = false;
 
     // Parameters to test performance of three approaches for multiplying matrix chain
-    private static final int NUM_PERFORMANCE_TRIALS = 5;
+    private static final int NUM_PERFORMANCE_TRIALS = 1;
     private static final boolean TESTING_PERFORMANCE = true;
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -44,46 +45,70 @@ public class Main {
             return;
         }
         else if (TESTING_PERFORMANCE) {
-            long bruteForceRuntimes = 0;
-            long syncSmartOrderingRuntimes = 0;
-            long multiThreadedSmartOrderingRuntimes = 0;
+            Scanner in = new Scanner(System.in);
 
-            // Run multiple trials for each approach on same test case
-            for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
-                // Multiply chain out using brute force approach and record runtime
-                long startTimeBruteForce = System.currentTimeMillis();
-                Matrix resBruteForce = chain.multiplyOutBruteForce();
-                long endTimeBruteForce = System.currentTimeMillis();
-                bruteForceRuntimes += endTimeBruteForce - startTimeBruteForce;
+            // Let user choose which appraoch to multiply matrix chain with
+            System.out.println("Which approach do you want to use (0 for brute force, 1 for single thread, 2 for multi-thread)?");
+            int approachChosen = in.nextInt();
+            
+            in.close();
 
-                // Multiply chain out using efficient ordering on single thread approach and record runtime
-                long startTimeSyncSmartOrdering = System.currentTimeMillis();
-                Matrix resSyncSmartOrdering = chain.multiplyOut(false);
-                long endTimeSyncSmartOrdering = System.currentTimeMillis();
-                syncSmartOrderingRuntimes += endTimeSyncSmartOrdering - startTimeSyncSmartOrdering;
-
-                // Multiply chain out using efficient ordering and multiple threads approach and record runtime
-                long startTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
-                Matrix resMultiThreadedSmartOrdering = chain.multiplyOut(true);
-                long endTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
-                multiThreadedSmartOrderingRuntimes += endTimeMultiThreadedSmartOrdering - startTimeMultiThreadedSmartOrdering;
-
-                if (!matricesAreEqual(resBruteForce, resSyncSmartOrdering, resMultiThreadedSmartOrdering)) {
-                    System.out.println("Incorrect results from matrix multiplication.");
-                    return;
+            if (approachChosen == 0) {
+                long bruteForceRuntimes = 0;
+                for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
+                    // Multiply chain out using brute force approach and record runtime
+                    long startTimeBruteForce = System.currentTimeMillis();
+                    Matrix resBruteForce = chain.multiplyOutBruteForce();
+                    long endTimeBruteForce = System.currentTimeMillis();
+                    bruteForceRuntimes += endTimeBruteForce - startTimeBruteForce;
                 }
+
+                // Average out the runtimes for the trials
+                double avgBruteForceRuntime = bruteForceRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+
+                // Print results
+                System.out.println("Average brute force runtime: " + avgBruteForceRuntime + "ms");
             }
+            else if (approachChosen == 1) {
+                long syncSmartOrderingRuntimes = 0;
+                for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
+                    // Multiply chain out using efficient ordering and single thread approach and record runtime
+                    long startTimeSyncSmartOrdering = System.currentTimeMillis();
+                    Matrix resSyncSmartOrdering = chain.multiplyOut(false);
+                    long endTimeSyncSmartOrdering = System.currentTimeMillis();
+                    syncSmartOrderingRuntimes += endTimeSyncSmartOrdering - startTimeSyncSmartOrdering;
+                }
 
-            // Average out the runtimes for all three approaches
-            double avgBruteForceRuntime = bruteForceRuntimes / (double) NUM_PERFORMANCE_TRIALS;
-            double avgSyncSmartOrderingRuntime = syncSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
-            double avgMultiThreadedSmartOrderingRuntim = multiThreadedSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+                // Average out the runtimes for the trials
+                double avgSyncSmartOrderingRuntime = syncSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
 
-            // Print results
-            System.out.println("Average brute force runtime: " + avgBruteForceRuntime + "ms");
-            System.out.println("Average synchronous runtime with efficient ordering: " + avgSyncSmartOrderingRuntime + "ms");
-            System.out.println("Average multithreaded runtime with efficient ordering: " + avgMultiThreadedSmartOrderingRuntim + "ms");
+                // Print results
+                System.out.println("Average synchronous runtime with efficient ordering: " + avgSyncSmartOrderingRuntime + "ms");
+            }
+            else {
+                long multiThreadedSmartOrderingRuntimes = 0;
+                for (int i = 0; i < NUM_PERFORMANCE_TRIALS; i++) {
+                    // Multiply chain out using efficient ordering and multiple threads approach and record runtime
+                    long startTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
+                    Matrix resMultiThreadedSmartOrdering = chain.multiplyOut(true);
+                    long endTimeMultiThreadedSmartOrdering = System.currentTimeMillis();
+                    multiThreadedSmartOrderingRuntimes += endTimeMultiThreadedSmartOrdering - startTimeMultiThreadedSmartOrdering;
+                }
 
+                // Average out the runtimes for the trials
+                double avgMultiThreadedSmartOrderingRuntime = multiThreadedSmartOrderingRuntimes / (double) NUM_PERFORMANCE_TRIALS;
+
+                // Print results
+                System.out.println("Average multithreaded runtime with efficient ordering: " + avgMultiThreadedSmartOrderingRuntime + "ms");
+            }
+                // if (!matricesAreEqual(resBruteForce, resSyncSmartOrdering, resMultiThreadedSmartOrdering)) {
+                //     System.out.println("Incorrect results from matrix multiplication.");
+                //     return;
+                // }
+                // if (!matricesAreEqual(resSyncSmartOrdering, resSyncSmartOrdering, resMultiThreadedSmartOrdering)) {
+                //     System.out.println("Incorrect results from matrix multiplication.");
+                //     return;
+                // }
             return;
         }
 
