@@ -57,7 +57,7 @@ public class ParallelOptimizationChain extends MatrixChain {
                         // If l > 2, wait for each subproblem to be filled
                         while (dp[i][k] == null && l > 2) {
                         }
-                        while (dp[k + 1][j] == null && l < 2) {
+                        while (dp[k + 1][j] == null && l > 2) {
                         }
 
                         BigInteger v1 = dp[i][k] == null ? BigInteger.ZERO : dp[i][k];
