@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage() { echo "Usage: $0 [-t] [-n testNo]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-t] [-n numTestsToRun]" 1>&2; exit 1; }
 
 runner=Main
 testNo=1
@@ -21,4 +21,4 @@ done
 
 javac $runner.java src/Matrix.java src/MatrixChain.java src/ParallelOptimizationChain.java
 java $runner $testNo
-rm $runner.class src/Matrix.class src/MatrixChain.class src/ParallelOptimizationChain.class src/ParallelOptimizationChain\$OrderingWorker.class
+rm $runner.class src/Matrix.class src/MatrixChain.class src/ParallelOptimizationChain.class src/ParallelOptimizationChain\$OrderingWorker.class src/MultThread.class
