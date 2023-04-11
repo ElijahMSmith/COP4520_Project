@@ -1,4 +1,12 @@
-#rows(n) #cols(m)
-r1_c1 r1_c2 ... r1_cm
+#matrices(i)
+#m1_rows(j) #m_1cols(k)
+r1_c1 r1_c2 ... r1_ck
 .....................
-rn_c1 rn_c2 ... rn_cm
+rj_c1 rj_c2 ... rj_ck
+...
+#mi_rows(j) #mi_cols(k)
+r1_c1 r1_c2 ... rj_ck
+.....................
+rj_c1 rj_c2 ... rj_ck
+
+
