@@ -76,20 +76,28 @@ public class MatrixChain {
 
     // https://home.cse.ust.hk/~dekai/271/notes/L12/L12.pdf
     protected int[][] getMinimumOrdering(int[] dims, int N) {
-        int[][] dp = new int[N + 1][N + 1];
+        BigInteger[][] dp = new BigInteger[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
+
+        for (int i = 0; i <= N; i++)
+            dp[i][i] = BigInteger.ZERO;
+
         // l is the length of each matrix chain subproblem we tackle this iteration
         // Start smaller so that when we divide larger chains, answer is already done
         for (int l = 2; l <= N; l++) {
+            // Get all matrix subchains of length l
             for (int i = 1; i <= N - l + 1; i++) {
                 int j = i + l - 1;
-                dp[i][j] = Integer.MAX_VALUE;
+
+                // For each possible partition location k
                 for (int k = i; k <= j - 1; k++) {
-                    // Chain is being considered from indexes i -> j, with k >= i but < j and k
-                    // being the division point
-                    // We take the best way to computer i:k, k+1:j, and the cost of multing together
-                    int q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
-                    if (q < dp[i][j]) {
+                    // Calculate lowest operations to compute this chain
+                    BigInteger q = dp[i][k].add(dp[k + 1][j])
+                            .add(BigInteger.valueOf(dims[i - 1] * dims[k] * dims[j]));
+
+                    // Update if first possible partition (k == i, dp[i][j] is still null)
+                    // or if this partition is the best case
+                    if (k == i || q.compareTo(dp[i][j]) < 0) {
                         dp[i][j] = q;
                         s[i][j] = k;
                     }
@@ -98,7 +106,7 @@ public class MatrixChain {
         }
 
         // Print minimum number of operations required to out file
-        // System.out.println(dp[1][N]);
+        System.out.println(dp[1][N]);
         return s;
     }
 
@@ -141,14 +149,14 @@ public class MatrixChain {
         return chain[0];
     }
 
-
     /* Root function called to multiply out chain of matrices */
     public Matrix multiplyOut(boolean useMultipleThreads) {
         int[][] s = getBestMultiplicationOrdering();
         Matrix retval;
 
         if (useMultipleThreads) {
-            // Setup thread pool with fixed number of threads to be used on individual matrix mutliplication operations
+            // Setup thread pool with fixed number of threads to be used on individual
+            // matrix multiplication operations
             executorService = Executors.newFixedThreadPool(THREAD_NO);
 
             // Multiply matrices on multiple threads and use efficient ordering
@@ -162,12 +170,15 @@ public class MatrixChain {
             } catch (Exception e) {
                 System.out.println("Executor took longer than one minute :(");
             }
-        }
-        else {
+        } else {
             // Multiply matrix chain on single thread but still use efficient ordering
             retval = multiplyOutSmartSync(s, 1, chain.length);
         }
 
         return retval;
+    }
+
+    public void printOptimizationResult() {
+        getBestMultiplicationOrdering();
     }
 }

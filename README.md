@@ -1,3 +1,5 @@
+[View our Research Paper (report-src/)](report-src/report.pdf)
+
 This project takes in a test file from the `in/` directory and spits your output to a file with the same test number in the `out/` directory.
 
 You can run this entire system using the `run.sh` script like so:
