@@ -27,6 +27,8 @@ public class ParallelOptimizationChain extends MatrixChain {
         private BigInteger[][] dp;
         private int[][] s;
         private int N;
+        private int ID;
+        private static int ID_COUNTER = 1;
 
         public OrderingWorker(int[] dims, BigInteger[][] dp, int[][] s, ConcurrentLinkedQueue<Integer> spQueue) {
             N = dp.length - 1;
@@ -34,6 +36,7 @@ public class ParallelOptimizationChain extends MatrixChain {
             this.dp = dp;
             this.s = s;
             this.spQueue = spQueue;
+            this.ID = ID_COUNTER++;
         }
 
         @Override
@@ -48,23 +51,33 @@ public class ParallelOptimizationChain extends MatrixChain {
                     return;
                 }
 
-                // Get all matrix subchains of length l from [i, j]
+                // System.out.println(ID + " polled " + l);
+
+                // Get all matrix subchains of length l
                 for (int i = 1; i <= N - l + 1; i++) {
                     int j = i + l - 1;
 
                     // For each possible partition location k
                     for (int k = i; k <= j - 1; k++) {
-                        // If l > 2, wait for each subproblem to be filled
-                        while (dp[i][k] == null && l > 2) {
-                        }
-                        while (dp[k + 1][j] == null && l > 2) {
+                        // Wait for other thread to finish subproblems not yet initialized
+                        boolean first = true;
+                        while (dp[i][k] == null) {
+                            // if (first) {
+                            // System.out.println("Waiting on " + i + ", " + k);
+                            // first = false;
+                            // }
                         }
 
-                        BigInteger v1 = dp[i][k] == null ? BigInteger.ZERO : dp[i][k];
-                        BigInteger v2 = dp[k + 1][j] == null ? BigInteger.ZERO : dp[k + 1][j];
+                        first = true;
+                        while (dp[k + 1][j] == null) {
+                            // if (first) {
+                            // System.out.println("Waiting on " + (k + 1) + ", " + j);
+                            // first = false;
+                            // }
+                        }
 
                         // Calculate lowest operations to compute this chain
-                        BigInteger q = v1.add(v2)
+                        BigInteger q = dp[i][k].add(dp[k + 1][j])
                                 .add(BigInteger.valueOf(dims[i - 1] * dims[k] * dims[j]));
 
                         // Update if first possible partition (k == i, dp[i][j] is still null)
@@ -73,10 +86,11 @@ public class ParallelOptimizationChain extends MatrixChain {
                             dp[i][j] = q;
                             s[i][j] = k;
                         }
+
+                        // System.out.println("Updated " + i + ", " + j);
                     }
                 }
             }
-
         }
     }
 
@@ -84,6 +98,9 @@ public class ParallelOptimizationChain extends MatrixChain {
     protected int[][] getMinimumOrdering(int[] dims, int N) {
         BigInteger[][] dp = new BigInteger[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
+
+        for (int i = 0; i <= N; i++)
+            dp[i][i] = BigInteger.ZERO;
 
         // l is the length of each matrix chain subproblem we tackle this iteration
         // Start smaller so that when we divide larger chains, answer is already done
@@ -101,7 +118,7 @@ public class ParallelOptimizationChain extends MatrixChain {
 
         es.shutdown();
         try {
-            es.awaitTermination(1, TimeUnit.MINUTES);
+            es.awaitTermination(5, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

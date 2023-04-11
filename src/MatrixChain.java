@@ -76,20 +76,28 @@ public class MatrixChain {
 
     // https://home.cse.ust.hk/~dekai/271/notes/L12/L12.pdf
     protected int[][] getMinimumOrdering(int[] dims, int N) {
-        int[][] dp = new int[N + 1][N + 1];
+        BigInteger[][] dp = new BigInteger[N + 1][N + 1];
         int[][] s = new int[N + 1][N + 1];
+
+        for (int i = 0; i <= N; i++)
+            dp[i][i] = BigInteger.ZERO;
+
         // l is the length of each matrix chain subproblem we tackle this iteration
         // Start smaller so that when we divide larger chains, answer is already done
         for (int l = 2; l <= N; l++) {
+            // Get all matrix subchains of length l
             for (int i = 1; i <= N - l + 1; i++) {
                 int j = i + l - 1;
-                dp[i][j] = Integer.MAX_VALUE;
-                // For each possible partition point in this chain
+
+                // For each possible partition location k
                 for (int k = i; k <= j - 1; k++) {
-                    // Total operations if we use this partition is the cost of multing left and
-                    // right + cost of combining at partition
-                    int q = dp[i][k] + dp[k + 1][j] + dims[i - 1] * dims[k] * dims[j];
-                    if (q < dp[i][j]) {
+                    // Calculate lowest operations to compute this chain
+                    BigInteger q = dp[i][k].add(dp[k + 1][j])
+                            .add(BigInteger.valueOf(dims[i - 1] * dims[k] * dims[j]));
+
+                    // Update if first possible partition (k == i, dp[i][j] is still null)
+                    // or if this partition is the best case
+                    if (k == i || q.compareTo(dp[i][j]) < 0) {
                         dp[i][j] = q;
                         s[i][j] = k;
                     }
@@ -168,5 +176,9 @@ public class MatrixChain {
         }
 
         return retval;
+    }
+
+    public void printOptimizationResult() {
+        getBestMultiplicationOrdering();
     }
 }

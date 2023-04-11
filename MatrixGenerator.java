@@ -6,7 +6,7 @@ public class MatrixGenerator {
     static final int MAX_COLS = 10;
     static final int MAX_ROWS = 10;
     static final int MAX_VALUE = 1;
-    static final int MIN_MATRICES = 500;
+    static final int MIN_MATRICES = 1000;
     static final int MAX_MATRICES = 1000;
     static final String outPath = "in/";
 
